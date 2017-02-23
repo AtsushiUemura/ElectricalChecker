@@ -1,22 +1,15 @@
 ﻿using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 public class AccountManager : SingletonMonoBehaviour<AccountManager> {
 
-    private string accountDataPath = "../";
-    private string accountDataName = "account_data.txt";
-
-    private class AccountInfo {
-        public string name;
-        public string pass;
-        public AccountInfo(string name, string pass) {
-            this.name = name;
-            this.pass = pass;
-        }
+    [System.Serializable]
+    public class AccountInfo {
+        public string Name;
+        public string Password;
     }
+    public AccountInfo CurrentAccount;
 
     #region
     void Awake() {
@@ -24,6 +17,7 @@ public class AccountManager : SingletonMonoBehaviour<AccountManager> {
             Destroy(this);
             return;
         }
+
     }
     // Use this for initialization
     void Start() {
@@ -36,91 +30,67 @@ public class AccountManager : SingletonMonoBehaviour<AccountManager> {
     }
     #endregion
 
-    private void Init() {
-        UIManager.Instance.AccountNameText.text = "";
-        UIManager.Instance.AccountPasswordText.text = "";
+    public void CreateButton() {
+        AccountInfo data = new AccountInfo();
+        data.Name = UIManager.Instance.AccountNameText.text;
+        data.Password = UIManager.Instance.AccountPasswordText.text;
+        Create(data);
     }
 
-    public void CreatAccount() {
-        string filePath = accountDataPath + accountDataName;
-        if (!CheckInputValue()) return;
-        AccountInfo data = new AccountInfo(UIManager.Instance.AccountNameText.text, UIManager.Instance.AccountPasswordText.text);
-        if (!ExistFile(filePath)) {
-            WriteFile(filePath, data);
-            Debug.Log("新規ファイルを作成しました");
+    public void LoginButton() {
+        AccountInfo data = new AccountInfo();
+        data.Name = UIManager.Instance.AccountNameText.text;
+        data.Password = UIManager.Instance.AccountPasswordText.text;
+        if (Login(data)) {
+            SceneManager.Instance.LoadScene("Main");
         }
-
-        if (!ExistAccount(filePath, data)) {
-            WriteFile(filePath, data);
-            Debug.Log("新規アカウントを作成しました");
-        }
-        else {
-            AccountInfo accountInfo = ReadFile(filePath, data);
-            if (accountInfo == null) return;
-            UIManager.Instance.LoginNameText.text = accountInfo.name;
-            Debug.Log("ログインしました");
-        }
-        Init();
-    }
-
-    private bool CheckInputValue() {
-        if (UIManager.Instance.AccountNameText.text == "") {
-            return false;
-        }
-        if (UIManager.Instance.AccountPasswordText.text == "") {
-            return false;
-        }
-        return true;
-    }
-
-    private bool ExistAccount(string filePath, AccountInfo data) {
-        bool flag = false;
-        StreamReader sr = new StreamReader(
-          filePath, Encoding.GetEncoding("shift_jis"));
-        while (sr.Peek() >= 0) {
-            string line = sr.ReadLine();
-            string[] word = line.Split(',');
-            if (word[0].Equals(data.name)) {
-                flag = true;
-                break;
-            }
-        }
-        sr.Close();
-        return flag;
     }
 
     /// <summary>
-    /// アカウントデータが存在するか確認
+    /// アカウントを登録する
     /// </summary>
-    /// <returns></returns>
-    private bool ExistFile(string filePath) {
-        if (File.Exists(filePath)) {
-            return true;
-        }
-        else {
+    /// <param name="data"></param>
+    private bool Create(AccountInfo data) {
+        if (data.Name.Equals("") || data.Password.Equals("")) {
+            UIManager.Instance.LogText.text = "入力された値が不正です";
             return false;
         }
+        if (SaveData.ContainsKey(data.Name)) {
+            UIManager.Instance.LogText.text = "すでに登録されています";
+            return false;
+        }
+        SaveData.SetString(data.Name, data.Password);
+        SaveData.Save();
+        UIManager.Instance.LogText.text = "登録に成功しました";
+        return true;
     }
 
-    private void WriteFile(string filePath, AccountInfo data) {
-        StreamWriter sw = new StreamWriter(
-            filePath, true, Encoding.GetEncoding("shift_jis"));
-        sw.Write(data.name + "," + data.pass + "\n");
-        sw.Close();
-    }
-
-    private AccountInfo ReadFile(string filePath, AccountInfo data) {
-        AccountInfo accountInfo = null;
-        StreamReader sr = new StreamReader(filePath, Encoding.GetEncoding("shift_jis"));
-        while (sr.Peek() >= 0) {
-            string line = sr.ReadLine();
-            string[] word = line.Split(',');
-            if (word[0].Equals(data.name) && word[1].Equals(data.pass)) {
-                accountInfo = new AccountInfo(word[0], word[1]);
-                return accountInfo;
+    /// <summary>
+    /// ログイン処理
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    private bool Login(AccountInfo data) {
+        if (data.Name.Equals("") || data.Password.Equals("")) {
+            UIManager.Instance.LogText.text = "入力された値が不正です";
+            return false;
+        }
+        foreach (var item in SaveData.Keys()) {
+            if (item.Equals(data.Name)) {
+                if (SaveData.GetString(item).Equals(data.Password)) {
+                    CurrentAccount.Name = item;
+                    CurrentAccount.Password = SaveData.GetString(item);
+                    UIManager.Instance.LoginNameText.text = item;
+                    UIManager.Instance.LogText.text = "ログインに成功しました";
+                    return true;
+                }
             }
         }
-        sr.Close();
-        return accountInfo;
+        UIManager.Instance.LogText.text = "登録されていないアカウントです";
+        return false;
+    }
+
+    public void CrearButton() {
+        SaveData.Clear();
     }
 }

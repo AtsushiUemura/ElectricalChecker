@@ -1,23 +1,19 @@
 ﻿using UnityEngine;
 using System.Collections;
-using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
-public class UIManager : SingletonMonoBehaviour<UIManager> {
-
-    public Text LoginNameText;
-
-    public InputField AccountNameText;
-    public InputField AccountPasswordText;
-
-    public Text LogText;
+public class SceneManager : SingletonMonoBehaviour<SceneManager> {
 
 
+
+    #region
     void Awake() {
         if (this != Instance) {
             Destroy(this);
             return;
         }
     }
+
     // Use this for initialization
     void Start() {
 
@@ -27,6 +23,9 @@ public class UIManager : SingletonMonoBehaviour<UIManager> {
     void Update() {
 
     }
+    #endregion
 
-
+    public void LoadScene(string sceneName) {
+        UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(sceneName);
+    }
 }
