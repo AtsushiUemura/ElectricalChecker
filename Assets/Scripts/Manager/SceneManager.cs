@@ -9,7 +9,7 @@ public class SceneManager : SingletonMonoBehaviour<SceneManager> {
     #region
     void Awake() {
         if (this != Instance) {
-            Destroy(this);
+            Destroy(this.gameObject);
             return;
         }
     }
